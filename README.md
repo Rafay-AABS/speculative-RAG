@@ -1,6 +1,6 @@
 # speculative-RAG
 
-
+```
 speculative-rag/
 │
 ├── data/
@@ -25,3 +25,4 @@ speculative-rag/
 │
 ├── main.py
 └── requirements.txt
+```
