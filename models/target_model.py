@@ -1,28 +1,29 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch
+import os
+from groq import Groq
 
 class TargetModel:
-    def __init__(self, model_name="meta-llama/Meta-Llama-3.1-70B-Instruct"):
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name, torch_dtype=torch.float16, device_map="auto"
+    def __init__(self, model_name="llama-3.3-70b-versatile"):
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            raise ValueError("GROQ_API_KEY not found. Get free API key from https://console.groq.com")
+        self.client = Groq(api_key=api_key)
+        self.model_name = model_name
+
+    def verify(self, prompt, draft_text):
+        """
+        Verify draft output by generating with target model and comparing.
+        In API-based speculative decoding, we generate and check if draft matches.
+        """
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1024,
+            temperature=0.3
         )
-
-    def verify(self, prompt, draft_tokens):
-        input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids.to(self.model.device)
-        tgt_len = len(draft_tokens)
-
-        target_output = self.model(input_ids).logits[:, -1, :]
-        accepted = []
-
-        for i, token in enumerate(draft_tokens):
-            target_probs = torch.argmax(target_output)
-            if token == target_probs:
-                accepted.append(token)
-            else:
-                regen = self.model.generate(
-                    input_ids, max_new_tokens=tgt_len
-                )[0][input_ids.shape[1]:]
-                return accepted + regen
-
-        return accepted
+        verified_text = response.choices[0].message.content
+        
+        # Simple verification: if draft is prefix of target output, accept it
+        if verified_text.startswith(draft_text.strip()):
+            return draft_text
+        else:
+            return verified_text

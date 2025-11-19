@@ -206,5 +206,12 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-
+# Project specific
 *data/
+vector_store/
+*.faiss
+*.npy
+
+# Keep example env file but ignore actual env
+.env
+!.env.example

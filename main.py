@@ -1,8 +1,18 @@
+from dotenv import load_dotenv
+import os
 from src.chunker import chunk_text
 from src.embedder import Embedder
 from src.retriever import Retriever
 from src.pipeline import SpeculativeRAG
 import glob
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Set HuggingFace token for gated models
+if os.getenv("HF_TOKEN"):
+    os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN")
+    os.environ["HUGGING_FACE_HUB_TOKEN"] = os.getenv("HF_TOKEN")
 
 # 1. Load Raw Text
 files = glob.glob("data/raw/*.txt")

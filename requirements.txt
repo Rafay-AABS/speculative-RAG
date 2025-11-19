@@ -1,6 +1,5 @@
 faiss-cpu
 sentence-transformers
-transformers
-accelerate
 numpy
-torch
+python-dotenv
+groq

@@ -1,17 +1,22 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch
+import os
+from groq import Groq
 
 class DraftModel:
-    def __init__(self, model_name="Qwen/Qwen2.5-0.5B"):
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name, torch_dtype=torch.float16, device_map="auto"
-        )
+    def __init__(self, model_name="llama-3.1-8b-instant"):
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            raise ValueError("GROQ_API_KEY not found. Get free API key from https://console.groq.com")
+        self.client = Groq(api_key=api_key)
+        self.model_name = model_name
 
-    def generate(self, prompt, max_new_tokens=80):
-        input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids.to(self.model.device)
-        output = self.model.generate(
-            input_ids, max_new_tokens=max_new_tokens, do_sample=True, top_k=20
+    def generate(self, prompt, max_new_tokens=512):
+        """
+        Generate draft response using faster, smaller model via API.
+        """
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=max_new_tokens,
+            temperature=0.7
         )
-        tokens = output[0][input_ids.shape[1]:]  # newly generated
-        return tokens
+        return response.choices[0].message.content
