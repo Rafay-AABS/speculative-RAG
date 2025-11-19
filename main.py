@@ -1,17 +1,23 @@
-# main.py
-
 from src.chunker import chunk_text
 from src.embedder import Embedder
 from src.retriever import Retriever
 from src.pipeline import SpeculativeRAG
 import glob
 
-# 1. Load Raw Textt
+# 1. Load Raw Text
 files = glob.glob("data/raw/*.txt")
+if not files:
+    raise ValueError("No text files found in data/raw/. Please add some .txt files to process.")
+
 raw_text = "\n\n".join(open(f).read() for f in files)
+
+if not raw_text.strip():
+    raise ValueError("All text files are empty. Please add content to process.")
 
 # 2. Chunk
 chunks = chunk_text(raw_text)
+if not chunks:
+    raise ValueError("No chunks were created from the text. Please check your data.")
 
 # 3. Build embeddings + vector store
 embed = Embedder()
