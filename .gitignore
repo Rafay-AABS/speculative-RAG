@@ -215,3 +215,5 @@ vector_store/
 # Keep example env file but ignore actual env
 .env
 !.env.example
+
+PROJECT_DOCUMENTATION.md
