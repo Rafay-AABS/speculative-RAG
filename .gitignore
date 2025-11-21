@@ -217,3 +217,4 @@ vector_store/
 !.env.example
 
 PROJECT_DOCUMENTATION.md
+USAGE.md
