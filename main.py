@@ -4,16 +4,16 @@ from src.chunker import chunk_text
 from src.embedder import Embedder
 from src.retriever import Retriever
 from src.pipeline import SpeculativeRAG
+from src.pdf_parser import parse_pdfs
 from src.strings import (
     DATA_RAW_PATTERN,
     ENV_HF_TOKEN,
     ENV_HUGGING_FACE_HUB_TOKEN,
-    ERROR_NO_TEXT_FILES,
+    ERROR_NO_PDF_FILES,
     ERROR_EMPTY_FILES,
     ERROR_NO_CHUNKS,
     DEFAULT_QUERY,
-    ANSWER_HEADER,
-    DOC_SEPARATOR
+    ANSWER_HEADER
 )
 import glob
 
@@ -25,12 +25,12 @@ if os.getenv(ENV_HF_TOKEN):
     os.environ[ENV_HF_TOKEN] = os.getenv(ENV_HF_TOKEN)
     os.environ[ENV_HUGGING_FACE_HUB_TOKEN] = os.getenv(ENV_HF_TOKEN)
 
-# 1. Load Raw Text
+# 1. Load Raw Text from PDFs
 files = glob.glob(DATA_RAW_PATTERN)
 if not files:
-    raise ValueError(ERROR_NO_TEXT_FILES)
+    raise ValueError(ERROR_NO_PDF_FILES)
 
-raw_text = DOC_SEPARATOR.join(open(f).read() for f in files)
+raw_text = parse_pdfs(files)
 
 if not raw_text.strip():
     raise ValueError(ERROR_EMPTY_FILES)

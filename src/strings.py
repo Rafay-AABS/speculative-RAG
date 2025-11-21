@@ -4,7 +4,7 @@ Centralized string constants and configuration values for the Speculative RAG pr
 
 # File paths
 DATA_RAW_DIR = "data/raw"
-DATA_RAW_PATTERN = "data/raw/*.txt"
+DATA_RAW_PATTERN = "data/raw/*.pdf"
 VECTOR_STORE_DIR = "vector_store"
 FAISS_INDEX_PATH = "vector_store/index.faiss"
 EMBEDDINGS_PATH = "vector_store/embeddings.npy"
@@ -48,12 +48,13 @@ RAG_PROMPT_TEMPLATE = """
 DEFAULT_QUERY = "Explain the leadership principles in these documents."
 
 # Error messages
-ERROR_NO_TEXT_FILES = "No text files found in data/raw/. Please add some .txt files to process."
-ERROR_EMPTY_FILES = "All text files are empty. Please add content to process."
+ERROR_NO_PDF_FILES = "No PDF files found in data/raw/. Please add some .pdf files to process."
+ERROR_EMPTY_FILES = "All PDF files are empty. Please add content to process."
 ERROR_NO_CHUNKS = "No chunks were created from the text. Please check your data."
 ERROR_EMPTY_TEXT_LIST = "Cannot embed empty text list"
 ERROR_INVALID_EMBEDDINGS = "Invalid embeddings shape: {shape}. Expected 2D array with shape (n_samples, n_features)"
 ERROR_GROQ_API_KEY = "GROQ_API_KEY not found. Get free API key from https://console.groq.com"
+ERROR_PDF_READ = "Error reading PDF file {filename}: {error}"
 
 # Success messages
 SUCCESS_FAISS_SAVED = "Saved FAISS index + embeddings."
