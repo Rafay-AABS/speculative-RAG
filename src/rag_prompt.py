@@ -1,12 +1,6 @@
+from .strings import RAG_PROMPT_TEMPLATE, DOC_PREFIX, DOC_SEPARATOR
+
 def build_rag_prompt(query, retrieved_docs):
-    context = "\n\n".join([f"[Doc {i+1}]\n{d}" for i, d in enumerate(retrieved_docs)])
+    context = DOC_SEPARATOR.join([DOC_PREFIX.format(index=i+1, content=d) for i, d in enumerate(retrieved_docs)])
     
-    return f"""
-        You are a helpful assistant.
-
-        Context:
-        {context}
-
-        Question: {query}
-        Answer:
-    """
+    return RAG_PROMPT_TEMPLATE.format(context=context, query=query)

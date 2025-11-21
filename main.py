@@ -4,30 +4,41 @@ from src.chunker import chunk_text
 from src.embedder import Embedder
 from src.retriever import Retriever
 from src.pipeline import SpeculativeRAG
+from src.strings import (
+    DATA_RAW_PATTERN,
+    ENV_HF_TOKEN,
+    ENV_HUGGING_FACE_HUB_TOKEN,
+    ERROR_NO_TEXT_FILES,
+    ERROR_EMPTY_FILES,
+    ERROR_NO_CHUNKS,
+    DEFAULT_QUERY,
+    ANSWER_HEADER,
+    DOC_SEPARATOR
+)
 import glob
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Set HuggingFace token for gated models
-if os.getenv("HF_TOKEN"):
-    os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN")
-    os.environ["HUGGING_FACE_HUB_TOKEN"] = os.getenv("HF_TOKEN")
+if os.getenv(ENV_HF_TOKEN):
+    os.environ[ENV_HF_TOKEN] = os.getenv(ENV_HF_TOKEN)
+    os.environ[ENV_HUGGING_FACE_HUB_TOKEN] = os.getenv(ENV_HF_TOKEN)
 
 # 1. Load Raw Text
-files = glob.glob("data/raw/*.txt")
+files = glob.glob(DATA_RAW_PATTERN)
 if not files:
-    raise ValueError("No text files found in data/raw/. Please add some .txt files to process.")
+    raise ValueError(ERROR_NO_TEXT_FILES)
 
-raw_text = "\n\n".join(open(f).read() for f in files)
+raw_text = DOC_SEPARATOR.join(open(f).read() for f in files)
 
 if not raw_text.strip():
-    raise ValueError("All text files are empty. Please add content to process.")
+    raise ValueError(ERROR_EMPTY_FILES)
 
 # 2. Chunk
 chunks = chunk_text(raw_text)
 if not chunks:
-    raise ValueError("No chunks were created from the text. Please check your data.")
+    raise ValueError(ERROR_NO_CHUNKS)
 
 # 3. Build embeddings + vector store
 embed = Embedder()
@@ -41,8 +52,8 @@ retriever = Retriever()
 pipeline = SpeculativeRAG(retriever)
 
 # 6. Run query
-query = "Explain the leadership principles in these documents."
+query = DEFAULT_QUERY
 answer = pipeline.run(query, chunks)
 
-print("\n--- Answer ---\n")
+print(ANSWER_HEADER)
 print(answer)

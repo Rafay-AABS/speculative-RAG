@@ -2,19 +2,26 @@ import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 import os
+from .strings import (
+    EMBEDDING_MODEL_NAME,
+    VECTOR_STORE_DIR,
+    ERROR_EMPTY_TEXT_LIST,
+    ERROR_INVALID_EMBEDDINGS,
+    SUCCESS_FAISS_SAVED
+)
 
 class Embedder:
-    def __init__(self, model_name="all-mpnet-base-v2"):
+    def __init__(self, model_name=EMBEDDING_MODEL_NAME):
         self.model = SentenceTransformer(model_name)
 
     def embed_texts(self, texts):
         if not texts:
-            raise ValueError("Cannot embed empty text list")
+            raise ValueError(ERROR_EMPTY_TEXT_LIST)
         return self.model.encode(texts, convert_to_numpy=True)
 
-    def build_faiss(self, embeddings, save_dir="vector_store"):
+    def build_faiss(self, embeddings, save_dir=VECTOR_STORE_DIR):
         if embeddings.size == 0 or len(embeddings.shape) != 2:
-            raise ValueError(f"Invalid embeddings shape: {embeddings.shape}. Expected 2D array with shape (n_samples, n_features)")
+            raise ValueError(ERROR_INVALID_EMBEDDINGS.format(shape=embeddings.shape))
         dim = embeddings.shape[1]
         index = faiss.IndexFlatL2(dim)
         index.add(embeddings)
@@ -24,9 +31,9 @@ class Embedder:
         faiss.write_index(index, f"{save_dir}/index.faiss")
         np.save(f"{save_dir}/embeddings.npy", embeddings)
 
-        print("Saved FAISS index + embeddings.")
+        print(SUCCESS_FAISS_SAVED)
 
-    def load_faiss(self, save_dir="vector_store"):
+    def load_faiss(self, save_dir=VECTOR_STORE_DIR):
         index = faiss.read_index(f"{save_dir}/index.faiss")
         embeddings = np.load(f"{save_dir}/embeddings.npy")
         return index, embeddings

@@ -1,11 +1,19 @@
 import os
 from groq import Groq
+from src.strings import (
+    TARGET_MODEL_NAME,
+    ENV_GROQ_API_KEY,
+    ERROR_GROQ_API_KEY,
+    TARGET_MAX_TOKENS,
+    TARGET_TEMPERATURE,
+    USER_ROLE
+)
 
 class TargetModel:
-    def __init__(self, model_name="llama-3.3-70b-versatile"):
-        api_key = os.getenv("GROQ_API_KEY")
+    def __init__(self, model_name=TARGET_MODEL_NAME):
+        api_key = os.getenv(ENV_GROQ_API_KEY)
         if not api_key:
-            raise ValueError("GROQ_API_KEY not found. Get free API key from https://console.groq.com")
+            raise ValueError(ERROR_GROQ_API_KEY)
         self.client = Groq(api_key=api_key)
         self.model_name = model_name
 
@@ -16,9 +24,9 @@ class TargetModel:
         """
         response = self.client.chat.completions.create(
             model=self.model_name,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1024,
-            temperature=0.3
+            messages=[{"role": USER_ROLE, "content": prompt}],
+            max_tokens=TARGET_MAX_TOKENS,
+            temperature=TARGET_TEMPERATURE
         )
         verified_text = response.choices[0].message.content
         
