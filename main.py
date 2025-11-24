@@ -17,7 +17,7 @@ from src.retriever import Retriever
 from src.pipeline import SpeculativeRAG
 from src.pdf_parser import parse_pdfs
 from src.config import load_config, Config
-from src.cli import parse_arguments, display_config
+from src.cli import parse_arguments
 from src.logger import setup_logger, logger
 from src.validators import validate_pdf_files, validate_query, validate_directory
 from src.cache import CacheManager
@@ -136,31 +136,7 @@ def run_single_query(query: str, pipeline: SpeculativeRAG, chunks: List[str]):
         print(f"Error processing query: {e}")
 
 
-def run_interactive_mode(pipeline: SpeculativeRAG, chunks: List[str]):
-    """Run interactive query loop."""
-    print("\n" + "="*60)
-    print("Interactive Mode - Enter your queries (type 'quit' or 'exit' to stop)")
-    print("="*60 + "\n")
-    
-    while True:
-        try:
-            query = input("\nQuery: ").strip()
-            
-            if query.lower() in ['quit', 'exit', 'q']:
-                print("Exiting interactive mode...")
-                break
-            
-            if not query:
-                continue
-            
-            run_single_query(query, pipeline, chunks)
-            
-        except KeyboardInterrupt:
-            print("\n\nInterrupted by user. Exiting...")
-            break
-        except EOFError:
-            print("\n\nEnd of input. Exiting...")
-            break
+
 
 
 def main():
@@ -185,12 +161,9 @@ def main():
             chunk_overlap=args.chunk_overlap,
             top_k=args.top_k,
             log_level=args.log_level,
-            interactive_mode=args.interactive,
+            interactive_mode=False,
             rebuild_index=args.rebuild
         )
-        
-        # Display configuration
-        display_config(config)
         
         # Setup environment
         setup_environment(config)
@@ -221,11 +194,8 @@ def main():
         pipeline = SpeculativeRAG(retriever)
         logger.info("Pipeline ready")
         
-        # Run queries
-        if config.interactive_mode:
-            run_interactive_mode(pipeline, chunks)
-        else:
-            run_single_query(args.query, pipeline, chunks)
+        # Run query
+        run_single_query(args.query, pipeline, chunks)
         
         logger.info("Application completed successfully")
         return 0
