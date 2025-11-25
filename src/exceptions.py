@@ -18,6 +18,11 @@ class PDFParsingError(SpeculativeRAGError):
     pass
 
 
+class DocumentParsingError(SpeculativeRAGError):
+    """Raised when document parsing fails (PDF, Word, etc.)."""
+    pass
+
+
 class EmbeddingError(SpeculativeRAGError):
     """Raised when embedding generation or indexing fails."""
     pass

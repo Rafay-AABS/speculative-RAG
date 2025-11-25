@@ -6,7 +6,7 @@ from pathlib import Path
 
 from src.config import load_config
 from src.logger import setup_logger
-from src.pdf_parser import parse_pdfs
+from src.document_parser import parse_documents
 from src.chunker import chunk_text
 from src.embedder import Embedder
 from src.retriever import Retriever
@@ -35,20 +35,22 @@ def main():
     print(f"Draft Model: {config.draft_model}")
     print(f"Target Model: {config.target_model}\n")
     
-    # Get PDF files
-    pdf_dir = Path(config.data_dir)
-    pdf_files = list(pdf_dir.glob("*.pdf"))
+    # Get document files (PDF and Word)
+    data_dir = Path(config.data_dir)
+    pdf_files = list(data_dir.glob("*.pdf"))
+    word_files = list(data_dir.glob("*.docx")) + list(data_dir.glob("*.doc"))
+    document_files = pdf_files + word_files
     
-    if not pdf_files:
-        print(f"No PDF files found in {config.data_dir}")
-        print("Please add some PDF files and try again.")
+    if not document_files:
+        print(f"No documents found in {config.data_dir}")
+        print("Please add PDF (.pdf) or Word (.docx) files and try again.")
         return
     
-    print(f"Found {len(pdf_files)} PDF files\n")
+    print(f"Found {len(pdf_files)} PDF files and {len(word_files)} Word documents\n")
     
-    # Parse PDFs
-    print("Parsing PDFs...")
-    raw_text = parse_pdfs([str(f) for f in pdf_files])
+    # Parse documents
+    print("Parsing documents...")
+    raw_text = parse_documents([str(f) for f in document_files])
     print(f"Extracted {len(raw_text)} characters\n")
     
     # Chunk text

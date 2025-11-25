@@ -12,11 +12,11 @@ from src.chunker import chunk_text
 from src.embedder import Embedder
 from src.retriever import Retriever
 from src.pipeline import SpeculativeRAG
-from src.pdf_parser import parse_pdfs
+from src.document_parser import parse_documents
 from src.config import load_config, Config
 from src.cache import CacheManager
 from src.logger import setup_logger, logger
-from src.exceptions import PDFParsingError
+from src.exceptions import DocumentParsingError
 from src.strings import ENV_HF_TOKEN, ENV_HUGGING_FACE_HUB_TOKEN
 
 
@@ -88,7 +88,7 @@ async def root():
     return {
         "message": "Speculative RAG API",
         "status": "running",
-        "endpoints": {"upload": "/upload-pdf", "query": "/query"},
+        "endpoints": {"upload": "/upload-documents", "query": "/query"},
     }
 
 
@@ -101,28 +101,30 @@ async def health():
     }
 
 
-@app.post("/upload-pdf", response_model=UploadResponse)
-async def upload_pdf(
-    files: List[UploadFile] = File(..., description="PDF files to process"),
+@app.post("/upload-documents", response_model=UploadResponse)
+async def upload_documents(
+    files: List[UploadFile] = File(..., description="Document files to process (PDF or Word)"),
     force_rebuild: bool = Form(False, description="Force rebuild of embeddings"),
 ):
-    """Endpoint to upload and process one or more PDF files."""
+    """Endpoint to upload and process one or more document files (PDF or Word)."""
     initialize_app()
 
     if not files:
         raise HTTPException(status_code=400, detail="No files provided")
 
+    supported_extensions = [".pdf", ".docx", ".doc"]
     for file in files:
-        if not file.filename.lower().endswith(".pdf"):
+        file_ext = Path(file.filename).suffix.lower()
+        if file_ext not in supported_extensions:
             raise HTTPException(
                 status_code=400,
-                detail=f"File {file.filename} is not a PDF",
+                detail=f"File {file.filename} has unsupported format. Supported formats: {', '.join(supported_extensions)}",
             )
 
-    logger.info("Received %d PDF files for processing", len(files))
+    logger.info("Received %d document files for processing", len(files))
 
     temp_dir = tempfile.mkdtemp()
-    pdf_paths: List[str] = []
+    document_paths: List[str] = []
 
     try:
         # Save uploaded files to a temporary directory
@@ -130,18 +132,18 @@ async def upload_pdf(
             temp_path = Path(temp_dir) / file.filename
             with open(temp_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            pdf_paths.append(str(temp_path))
+            document_paths.append(str(temp_path))
 
-        # Parse PDFs to text
+        # Parse documents to text
         try:
-            raw_text = parse_pdfs(pdf_paths)
-        except PDFParsingError as exc:
+            raw_text = parse_documents(document_paths)
+        except DocumentParsingError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
         if not raw_text.strip():
             raise HTTPException(
                 status_code=400,
-                detail="No text content extracted from PDFs",
+                detail="No text content extracted from documents",
             )
 
         # Chunk text
@@ -154,7 +156,7 @@ async def upload_pdf(
         if not state.chunks:
             raise HTTPException(
                 status_code=400,
-                detail="No chunks created from PDFs",
+                detail="No chunks created from documents",
             )
 
         # Build / load embeddings + index using cache
@@ -186,15 +188,25 @@ async def upload_pdf(
         # Initialize RAG pipeline
         state.pipeline = SpeculativeRAG(state.retriever)
 
-        logger.info("PDFs processed successfully: %d chunks", len(state.chunks))
+        logger.info("Documents processed successfully: %d chunks", len(state.chunks))
 
         return UploadResponse(
-            message="PDFs processed successfully",
+            message="Documents processed successfully",
             num_files=len(files),
             num_chunks=len(state.chunks),
         )
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+# Backward-compatible alias for PDF uploads
+@app.post("/upload-pdf", response_model=UploadResponse)
+async def upload_pdf(
+    files: List[UploadFile] = File(..., description="PDF files to process"),
+    force_rebuild: bool = Form(False, description="Force rebuild of embeddings"),
+):
+    """Backward-compatible endpoint for PDF uploads. Redirects to /upload-documents."""
+    return await upload_documents(files, force_rebuild)
 
 
 @app.post("/query", response_model=QueryResponse)
@@ -205,7 +217,7 @@ async def query(request: QueryRequest):
     if state.chunks is None or state.pipeline is None:
         raise HTTPException(
             status_code=400,
-            detail="No documents loaded. Please upload PDFs first using /upload-pdf.",
+            detail="No documents loaded. Please upload documents first using /upload-documents.",
         )
 
     query_text = request.query.strip()

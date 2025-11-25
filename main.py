@@ -15,7 +15,7 @@ from src.chunker import chunk_text
 from src.embedder import Embedder
 from src.retriever import Retriever
 from src.pipeline import SpeculativeRAG
-from src.pdf_parser import parse_pdfs
+from src.document_parser import parse_documents
 from src.config import load_config, Config
 from src.cli import parse_arguments
 from src.logger import setup_logger, logger
@@ -24,7 +24,7 @@ from src.cache import CacheManager
 from src.exceptions import (
     SpeculativeRAGError,
     ConfigurationError,
-    PDFParsingError,
+    DocumentParsingError,
     ValidationError
 )
 from src.strings import (
@@ -46,35 +46,37 @@ def setup_environment(config: Config):
         logger.debug("HuggingFace token configured")
 
 
-def get_pdf_files(args) -> List[str]:
-    """Get list of PDF files to process."""
+def get_document_files(args) -> List[str]:
+    """Get list of document files to process (PDF and Word)."""
     if args.pdf:
-        # Use specific PDF files provided
-        logger.info(f"Using {len(args.pdf)} PDF files provided via command line")
+        # Use specific files provided
+        logger.info(f"Using {len(args.pdf)} document files provided via command line")
         return args.pdf
     else:
-        # Use all PDFs from data directory
-        pattern = str(Path(args.data_dir) / "*.pdf")
-        files = glob.glob(pattern)
-        logger.info(f"Found {len(files)} PDF files in {args.data_dir}")
+        # Use all PDFs and Word documents from data directory
+        data_dir = Path(args.data_dir)
+        pdf_files = list(data_dir.glob("*.pdf"))
+        docx_files = list(data_dir.glob("*.docx")) + list(data_dir.glob("*.doc"))
+        files = [str(f) for f in pdf_files + docx_files]
+        logger.info(f"Found {len(pdf_files)} PDF files and {len(docx_files)} Word documents in {args.data_dir}")
         return files
 
 
-def process_documents(config: Config, pdf_files: List[str], cache_manager: CacheManager, force_rebuild: bool = False):
+def process_documents(config: Config, document_files: List[str], cache_manager: CacheManager, force_rebuild: bool = False):
     """
-    Process PDF documents and build/load vector index.
+    Process documents (PDF and Word) and build/load vector index.
     
     Returns:
         tuple: (chunks, retriever)
     """
     logger.info("Processing documents...")
     
-    # Parse PDFs
-    raw_text = parse_pdfs(pdf_files)
+    # Parse documents
+    raw_text = parse_documents(document_files)
     logger.info(f"Extracted text: {len(raw_text)} characters")
     
     if not raw_text.strip():
-        raise PDFParsingError("No text content extracted from PDFs")
+        raise DocumentParsingError("No text content extracted from documents")
     
     # Chunk text
     chunks = chunk_text(raw_text, config.chunk_size, config.chunk_overlap)
@@ -168,15 +170,15 @@ def main():
         # Setup environment
         setup_environment(config)
         
-        # Get PDF files to process
-        pdf_files = get_pdf_files(args)
+        # Get document files to process
+        document_files = get_document_files(args)
         
-        if not pdf_files:
-            raise ValidationError(f"No PDF files found in {args.data_dir}")
+        if not document_files:
+            raise ValidationError(f"No documents found in {args.data_dir}")
         
-        # Validate PDF files
-        validated_paths = validate_pdf_files(pdf_files)
-        pdf_files = [str(p) for p in validated_paths]
+        # Validate document files
+        validated_paths = validate_pdf_files(document_files)
+        document_files = [str(p) for p in validated_paths]
         
         # Initialize cache manager
         cache_manager = CacheManager(config.vector_store_dir)
@@ -184,7 +186,7 @@ def main():
         # Process documents and build index
         chunks, retriever = process_documents(
             config,
-            pdf_files,
+            document_files,
             cache_manager,
             force_rebuild=config.rebuild_index
         )
