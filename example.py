@@ -4,7 +4,7 @@ Example script demonstrating programmatic usage of Speculative RAG.
 from dotenv import load_dotenv
 from pathlib import Path
 
-from src.config import load_config
+from settings.config import load_config
 from src.logger import setup_logger
 from src.document_parser import parse_documents
 from src.chunker import chunk_text

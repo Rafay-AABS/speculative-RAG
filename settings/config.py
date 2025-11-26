@@ -5,7 +5,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Optional
 from pathlib import Path
-from .strings import (
+from src.strings import (
     EMBEDDING_MODEL_NAME,
     DRAFT_MODEL_NAME,
     TARGET_MODEL_NAME,

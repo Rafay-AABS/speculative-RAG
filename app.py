@@ -13,7 +13,7 @@ from src.embedder import Embedder
 from src.retriever import Retriever
 from src.pipeline import SpeculativeRAG
 from src.document_parser import parse_documents
-from src.config import load_config, Config
+from settings.config import load_config, Config
 from src.cache import CacheManager
 from src.logger import setup_logger, logger
 from src.exceptions import DocumentParsingError
